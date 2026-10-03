@@ -1,0 +1,17 @@
+{
+  "name": "trained-assist-error-watcher",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Trained Assist Error Watcher: registered error readers, incident aggregation, suppression, reconciliation",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "check": "node scripts/check-syntax.js",
+    "test": "node --test --test-concurrency=1 tests/*.test.js",
+    "sandbox": "node scripts/sandbox/error-watcher-sandbox.cjs",
+    "evidence:verify": "node scripts/sandbox/error-watcher-sandbox.cjs --verify"
+  },
+  "devDependencies": {}
+}

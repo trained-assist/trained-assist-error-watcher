@@ -2,11 +2,22 @@
 
 Trained Assist Error Watcher: errors to incidents, diagnosis, issue/report
 
-Статус: создан 30.09.2026, кода пока нет.
+Статус: P27 (агрегация инцидентов и suppression) реализован 03.10.2026 · этап I09, эпик E6 #22.
 
-## Что здесь будет
+## Что здесь есть
 
-Чтение зарегистрированных источников ошибок, агрегация в инциденты с подавлением дублей, диагностика и выход в обход/issue/отчёт.
+Чтение зарегистрированных источников ошибок (cursor/replay/dedup), агрегация в инциденты по точному fingerprint, scoped timed/permanent suppression с audit и revoke, quarantine для ops reconciliation, ограниченный бюджет диагностики и независимый health alarm. Диагностика LLM→OpenCode, отчёт и issue — карточка P28.
+
+Подробности и инварианты: [docs/ERROR-WATCHER.md](docs/ERROR-WATCHER.md).
+
+## Проверка
+
+```bash
+npm run check            # синтаксис модулей
+npm test                 # детерминированные тесты (node --test)
+npm run sandbox          # сценарий этапа I09 → docs/evidence/p27-incident-aggregation/
+npm run evidence:verify  # побайтовая сверка transcript
+```
 
 ## Откуда берётся работа
 

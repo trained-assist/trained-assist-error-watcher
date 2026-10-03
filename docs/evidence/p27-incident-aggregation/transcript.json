@@ -1,0 +1,585 @@
+{
+  "schemaVersion": 1,
+  "card": "P27",
+  "epic": "E6 #22",
+  "stage": "I09",
+  "contract": "C12/C13 v1",
+  "occurredAt": "2026-10-03T09:00:00.000Z",
+  "clock": "virtual",
+  "sandboxRoot": ".sandbox/p27-<pid>/",
+  "summary": {
+    "scenarios": 14,
+    "checks": 66,
+    "passed": 66,
+    "failed": 0,
+    "status": "PASS"
+  },
+  "scenarios": [
+    {
+      "name": "storm-1000",
+      "fault": "zero-cost engine storm",
+      "steps": [
+        {
+          "event": "storm.feed",
+          "events": 1000,
+          "code": "ENGINE_ZERO_COST",
+          "outcome": "failed",
+          "costPerEvent": 0
+        },
+        {
+          "event": "storm.aggregated",
+          "incidents": 1,
+          "events": 1000,
+          "dispatchCalls": 1,
+          "activeDiagnosticSlots": 1,
+          "sourceLogEvents": 1000
+        }
+      ],
+      "checks": [
+        {
+          "name": "the storm opens exactly one incident",
+          "passed": true,
+          "detail": "expected 1, got 1"
+        },
+        {
+          "name": "the storm costs one dispatch, not one thousand",
+          "passed": true,
+          "detail": "expected 1, got 1"
+        },
+        {
+          "name": "every event is counted on the incident",
+          "passed": true,
+          "detail": "expected 1000, got 1000"
+        },
+        {
+          "name": "one active diagnostic task serves the whole storm",
+          "passed": true,
+          "detail": "expected 1000, got 1000"
+        },
+        {
+          "name": "the original errors stay in the source log",
+          "passed": true,
+          "detail": "expected 1000, got 1000"
+        },
+        {
+          "name": "no second diagnostic task is started",
+          "passed": true,
+          "detail": "expected 1, got 1"
+        },
+        {
+          "name": "the incident stays open",
+          "passed": true,
+          "detail": "expected \"open\", got \"open\""
+        },
+        {
+          "name": "the log names the fingerprint",
+          "passed": true,
+          "detail": "expected to find INCIDENT_DEDUPED"
+        }
+      ]
+    },
+    {
+      "name": "mute-timed",
+      "fault": "repeat events under a timed mute",
+      "steps": [
+        {
+          "event": "mute.created",
+          "suppressionId": "SUP_a99911e5f9dde46ed5d888d9",
+          "kind": "mute_until",
+          "actor": "watcher-agent",
+          "expiresAt": "2026-10-04T09:00:00.000Z"
+        },
+        {
+          "event": "mute.applied",
+          "suppressed": 10,
+          "dispatchCalls": 1,
+          "incidentCount": 12,
+          "suppressedCount": 10,
+          "sourceLogEvents": 12
+        }
+      ],
+      "checks": [
+        {
+          "name": "every repeat is suppressed",
+          "passed": true,
+          "detail": "expected 10, got 10"
+        },
+        {
+          "name": "a muted storm costs no extra dispatch",
+          "passed": true,
+          "detail": "expected 1, got 1"
+        },
+        {
+          "name": "suppressed events still count on the incident",
+          "passed": true,
+          "detail": "expected 12, got 12"
+        },
+        {
+          "name": "suppressed events are counted separately",
+          "passed": true,
+          "detail": "expected 10, got 10"
+        },
+        {
+          "name": "the original errors are not deleted",
+          "passed": true,
+          "detail": "expected 12, got 12"
+        },
+        {
+          "name": "the mute is recorded with its reason",
+          "passed": true,
+          "detail": "expected to find third-party outage, diagnosis already filed upstream"
+        }
+      ]
+    },
+    {
+      "name": "mute-expiry",
+      "fault": "mute expiry reopens the incident",
+      "steps": [
+        {
+          "event": "mute.expired",
+          "suppressed": 0,
+          "reopened": 1,
+          "dispatchCalls": 2
+        }
+      ],
+      "checks": [
+        {
+          "name": "events under the mute are suppressed",
+          "passed": true,
+          "detail": "expected true, got true"
+        },
+        {
+          "name": "no event is suppressed after the expiry",
+          "passed": true,
+          "detail": "expected 0, got 0"
+        },
+        {
+          "name": "the first event after the expiry reopens the incident",
+          "passed": true,
+          "detail": "expected \"reopened\", got \"reopened\""
+        },
+        {
+          "name": "the reopened incident is diagnosed once more",
+          "passed": true,
+          "detail": "expected 2, got 2"
+        },
+        {
+          "name": "the expiry is audited",
+          "passed": true,
+          "detail": "expected to find SUPPRESSION_EXPIRED"
+        }
+      ]
+    },
+    {
+      "name": "regression",
+      "fault": "regression after a resolve",
+      "steps": [
+        {
+          "event": "regression.reopened",
+          "transition": "reopened",
+          "reopenCount": 1,
+          "dispatchCalls": 2
+        }
+      ],
+      "checks": [
+        {
+          "name": "the incident is resolved",
+          "passed": true,
+          "detail": "expected \"resolved\", got \"resolved\""
+        },
+        {
+          "name": "the same fingerprint reopens the incident",
+          "passed": true,
+          "detail": "expected \"reopened\", got \"reopened\""
+        },
+        {
+          "name": "the reopen is counted",
+          "passed": true,
+          "detail": "expected 1, got 1"
+        },
+        {
+          "name": "a reopened incident is diagnosed again",
+          "passed": true,
+          "detail": "expected 2, got 2"
+        }
+      ]
+    },
+    {
+      "name": "unknown-profile",
+      "fault": "profile error without a profile",
+      "steps": [
+        {
+          "event": "reconciliation.quarantined",
+          "decision": "quarantined",
+          "delivery": "none",
+          "incidents": 0,
+          "dispatchCalls": 0,
+          "openReconciliation": 1
+        }
+      ],
+      "checks": [
+        {
+          "name": "the event is quarantined",
+          "passed": true,
+          "detail": "expected \"quarantined\", got \"quarantined\""
+        },
+        {
+          "name": "no user delivery is attempted",
+          "passed": true,
+          "detail": "expected \"none\", got \"none\""
+        },
+        {
+          "name": "no incident is opened",
+          "passed": true,
+          "detail": "expected 0, got 0"
+        },
+        {
+          "name": "no diagnosis is dispatched",
+          "passed": true,
+          "detail": "expected 0, got 0"
+        },
+        {
+          "name": "the event waits for ops reconciliation",
+          "passed": true,
+          "detail": "expected 1, got 1"
+        },
+        {
+          "name": "the quarantine is logged",
+          "passed": true,
+          "detail": "expected to find reconciliation.quarantined"
+        }
+      ]
+    },
+    {
+      "name": "unregistered-source",
+      "fault": "event from an unregistered service",
+      "steps": [],
+      "checks": [
+        {
+          "name": "the event is quarantined",
+          "passed": true,
+          "detail": "expected \"quarantined\", got \"quarantined\""
+        },
+        {
+          "name": "the reason is the unregistered source",
+          "passed": true,
+          "detail": "expected \"SOURCE_NOT_REGISTERED\", got \"SOURCE_NOT_REGISTERED\""
+        },
+        {
+          "name": "no incident is opened",
+          "passed": true,
+          "detail": "expected 0, got 0"
+        },
+        {
+          "name": "no diagnosis is dispatched",
+          "passed": true,
+          "detail": "expected 0, got 0"
+        }
+      ]
+    },
+    {
+      "name": "platform-outage",
+      "fault": "host outage without a profile",
+      "steps": [
+        {
+          "event": "platform.aggregated",
+          "incidents": 1,
+          "events": 4,
+          "scope": "platform",
+          "affectedProfiles": 0,
+          "delivery": "none"
+        }
+      ],
+      "checks": [
+        {
+          "name": "the outage opens one platform incident",
+          "passed": true,
+          "detail": "expected 1, got 1"
+        },
+        {
+          "name": "the incident carries no profile",
+          "passed": true,
+          "detail": "expected 0, got 0"
+        },
+        {
+          "name": "no user delivery is attempted",
+          "passed": true,
+          "detail": "expected \"none\", got \"none\""
+        },
+        {
+          "name": "all events are counted",
+          "passed": true,
+          "detail": "expected 4, got 4"
+        }
+      ]
+    },
+    {
+      "name": "self-error",
+      "fault": "watcher reports its own failure",
+      "steps": [
+        {
+          "event": "self.recorded",
+          "decision": "self_error",
+          "incidents": 0,
+          "dispatchCalls": 0,
+          "selfErrors": 1
+        }
+      ],
+      "checks": [
+        {
+          "name": "the event is recorded as a watcher self error",
+          "passed": true,
+          "detail": "expected \"self_error\", got \"self_error\""
+        },
+        {
+          "name": "no incident is opened",
+          "passed": true,
+          "detail": "expected 0, got 0"
+        },
+        {
+          "name": "no diagnosis of itself is dispatched",
+          "passed": true,
+          "detail": "expected 0, got 0"
+        },
+        {
+          "name": "the self error is kept in a bounded bucket",
+          "passed": true,
+          "detail": "expected 1, got 1"
+        }
+      ]
+    },
+    {
+      "name": "diagnostic-depth",
+      "fault": "diagnostic task exceeds the depth limit",
+      "steps": [],
+      "checks": [
+        {
+          "name": "the deep diagnostic is stopped",
+          "passed": true,
+          "detail": "expected \"self_error\", got \"self_error\""
+        },
+        {
+          "name": "the depth is visible in the decision",
+          "passed": true,
+          "detail": "expected 2, got 2"
+        },
+        {
+          "name": "no recursive diagnosis is dispatched",
+          "passed": true,
+          "detail": "expected 0, got 0"
+        }
+      ]
+    },
+    {
+      "name": "retention-ttl",
+      "fault": "accelerated clock archives resolved incidents",
+      "steps": [
+        {
+          "event": "retention.applied",
+          "archived": 1,
+          "openIncidents": 0,
+          "cursor": 3
+        }
+      ],
+      "checks": [
+        {
+          "name": "the resolved incident is archived after the TTL",
+          "passed": true,
+          "detail": "expected 1, got 1"
+        },
+        {
+          "name": "the aggregate survives the archive",
+          "passed": true,
+          "detail": "expected 3, got 3"
+        },
+        {
+          "name": "the reader cursor is not erased",
+          "passed": true,
+          "detail": "expected 3, got 3"
+        },
+        {
+          "name": "an active incident is never archived",
+          "passed": true,
+          "detail": "expected 0, got 0"
+        },
+        {
+          "name": "the archived incident stays archived",
+          "passed": true,
+          "detail": "expected 1, got 1"
+        }
+      ]
+    },
+    {
+      "name": "health-alarm",
+      "fault": "backlog and self errors raise a deterministic alarm",
+      "steps": [
+        {
+          "event": "health.backlog",
+          "status": "failing",
+          "reasons": [
+            "SOURCE_BACKLOG",
+            "SOURCE_NEVER_POLLED"
+          ]
+        },
+        {
+          "event": "health.self-errors",
+          "status": "failing",
+          "reasons": [
+            "SELF_ERRORS"
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "name": "a drained watcher is healthy",
+          "passed": true,
+          "detail": "expected \"ok\", got \"ok\""
+        },
+        {
+          "name": "the backlog raises a failing alarm",
+          "passed": true,
+          "detail": "expected \"failing\", got \"failing\""
+        },
+        {
+          "name": "the reason is the source backlog",
+          "passed": true,
+          "detail": "expected to find SOURCE_BACKLOG"
+        },
+        {
+          "name": "suppression does not silence the alarm",
+          "passed": true,
+          "detail": "expected \"failing\", got \"failing\""
+        },
+        {
+          "name": "watcher self errors are visible",
+          "passed": true,
+          "detail": "expected to find SELF_ERRORS"
+        },
+        {
+          "name": "the alarm id is deterministic for the same inputs",
+          "passed": true,
+          "detail": "expected \"ALM_b674afec4e31ba48575be40c\", got \"ALM_b674afec4e31ba48575be40c\""
+        }
+      ]
+    },
+    {
+      "name": "push-intake",
+      "fault": "external installation pushes an event",
+      "steps": [
+        {
+          "event": "push.accepted",
+          "status": 202,
+          "reasonCode": "EVENT_ACCEPTED",
+          "duplicateStatus": 202,
+          "duplicateReasonCode": "DUPLICATE_EVENT_IGNORED",
+          "storedEvents": 1
+        }
+      ],
+      "checks": [
+        {
+          "name": "the event is accepted with a receipt",
+          "passed": true,
+          "detail": "expected 202, got 202"
+        },
+        {
+          "name": "the receipt confirms acceptance",
+          "passed": true,
+          "detail": "expected \"EVENT_ACCEPTED\", got \"EVENT_ACCEPTED\""
+        },
+        {
+          "name": "the same eventId is not stored twice",
+          "passed": true,
+          "detail": "expected true, got true"
+        },
+        {
+          "name": "the source log holds one event",
+          "passed": true,
+          "detail": "expected 1, got 1"
+        },
+        {
+          "name": "the pushed event is aggregated like a read one",
+          "passed": true,
+          "detail": "expected \"opened\", got \"opened\""
+        }
+      ]
+    },
+    {
+      "name": "reader-truncation",
+      "fault": "source log rotated under the cursor",
+      "steps": [
+        {
+          "event": "reader.truncated",
+          "dropped": 5,
+          "truncated": true,
+          "cursor": 0
+        }
+      ],
+      "checks": [
+        {
+          "name": "the cursor consumed the log",
+          "passed": true,
+          "detail": "expected 5, got 5"
+        },
+        {
+          "name": "the dropped count stays visible",
+          "passed": true,
+          "detail": "expected 5, got 5"
+        },
+        {
+          "name": "the cursor restarts from the beginning",
+          "passed": true,
+          "detail": "expected 0, got 0"
+        },
+        {
+          "name": "the truncation is logged",
+          "passed": true,
+          "detail": "expected to find SOURCE_LOG_TRUNCATED"
+        }
+      ]
+    },
+    {
+      "name": "fidelity",
+      "fault": "success",
+      "steps": [
+        {
+          "event": "fidelity",
+          "dispatcher": "in-memory fake sink (no LLM/OpenCode call)",
+          "clock": "virtual",
+          "transport": "loopback only",
+          "liveProvider": false,
+          "containsPersonalData": false
+        }
+      ],
+      "checks": [
+        {
+          "name": "the dispatcher is a fake sink",
+          "passed": true,
+          "detail": "expected 0, got 0"
+        },
+        {
+          "name": "no live provider is touched",
+          "passed": true,
+          "detail": "expected true, got true"
+        }
+      ]
+    }
+  ],
+  "acceptance": {
+    "AC-160": "a storm of 1000 zero-cost events opens one incident and one dispatch; the source log keeps every original error",
+    "AC-161": "an unknown profile and an unregistered source go to ops reconciliation; no user delivery is attempted",
+    "AC-162": "a timed mute is recorded with a reason and an author; expiry and regression reopen the incident",
+    "AC-270": "one active diagnostic task per incident; repeat events append to it",
+    "AC-272": "suppression aggregates counts and never deletes the original errors or marks tasks successful",
+    "AC-273": "a wildcard or unbound suppression rule is refused; permanent ignore is auditable and revocable",
+    "AC-274": "an independent deterministic health alarm reports backlog, stale sources and watcher self errors",
+    "AC-165": "logs carry errorEvent/incident/sourceTask/diagnosticTask, fingerprint/count, mute/reopen/expiry and the self-loop guard"
+  },
+  "fidelity": {
+    "dispatcher": "in-memory fake sink",
+    "llmCalls": 0,
+    "openCodeCalls": 0,
+    "liveProvider": false,
+    "containsPersonalData": false,
+    "note": "a green sandbox run is not a live provider test"
+  }
+}

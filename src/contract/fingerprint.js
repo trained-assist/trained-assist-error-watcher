@@ -60,9 +60,4 @@ function fingerprintFor(event) {
   return crypto.createHash('sha256').update(canonical).digest('hex');
 }
 
-module.exports = {
-  fingerprintFor,
-  fingerprintParts,
-  normalizeStackLocation,
-  MAX_FRAMES,
-};
+module.exports = { fingerprintFor, fingerprintParts };

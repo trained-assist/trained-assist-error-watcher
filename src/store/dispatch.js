@@ -130,4 +130,4 @@ function createDispatchLedger({ root, log, now = () => new Date(), config = {} }
   };
 }
 
-module.exports = { createDispatchLedger, dispatchIdFor, INTENT_STATUSES };
+module.exports = { createDispatchLedger };

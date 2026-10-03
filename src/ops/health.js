@@ -11,10 +11,6 @@ const STATUS_OK = 'ok';
 const STATUS_DEGRADED = 'degraded';
 const STATUS_FAILING = 'failing';
 
-function rank(status) {
-  return { [STATUS_OK]: 0, [STATUS_DEGRADED]: 1, [STATUS_FAILING]: 2 }[status] || 0;
-}
-
 /**
  * @param {object} options
  * @param {string} options.root изолированный корень watcher'а

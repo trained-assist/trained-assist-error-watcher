@@ -174,8 +174,9 @@ function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile
     const { event, raw, violations } = normalizeErrorEvent(rawEvent);
     if (!event) {
       state.quarantinedCount += 1;
-      const item = reconciliation.quarantine({ event: raw, violations, reasonCode: violations.length > 0 ? 'CONTRACT_VIOLATION' : 'EVENT_NOT_OBJECT' });
-      return { eventId: null, fingerprint: null, decision: 'quarantined', incidentId: null, transition: null, suppressionId: null, dispatchId: null, delivery: 'none', reasonCode: 'EVENT_NOT_OBJECT', reconciliationId: item.reconciliationId };
+      const reasonCode = violations.length > 0 ? 'CONTRACT_VIOLATION' : 'EVENT_NOT_OBJECT';
+      const item = reconciliation.quarantine({ event: raw, violations, reasonCode });
+      return { eventId: null, fingerprint: null, decision: 'quarantined', incidentId: null, transition: null, suppressionId: null, dispatchId: null, delivery: 'none', reasonCode, reconciliationId: item.reconciliationId };
     }
 
     if (isSelfOrigin(event.origin) || event.origin.diagnosticDepth > mergedConfig.maxDiagnosticDepth) {
@@ -443,4 +444,4 @@ function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile
   };
 }
 
-module.exports = { createErrorWatcher, DEFAULT_CONFIG, isSelfOrigin };
+module.exports = { createErrorWatcher };

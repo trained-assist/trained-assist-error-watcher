@@ -342,7 +342,6 @@ function createIncidentStore({ root, log, now = () => new Date(), config = {} } 
     cleanup,
     summary,
     incidentIdFor,
-    transitions: () => readLines(transitionsFile),
   };
 }
 
@@ -351,6 +350,4 @@ module.exports = {
   incidentIdFor,
   diagnosticTaskIdFor,
   SEVERITY_RANK,
-  INCIDENT_STATES,
-  SLOT_STATUSES,
 };

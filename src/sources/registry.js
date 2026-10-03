@@ -79,4 +79,4 @@ function createSourceRegistry({ log, now = () => new Date() } = {}) {
   return { register, get, list, has, markSeen };
 }
 
-module.exports = { createSourceRegistry, TRANSPORTS, RETENTION_CLASSES };
+module.exports = { createSourceRegistry };

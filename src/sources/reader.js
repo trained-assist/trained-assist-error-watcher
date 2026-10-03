@@ -149,4 +149,4 @@ function createSourceReader({ root, sourceId, source, log, now = () => new Date(
   };
 }
 
-module.exports = { createSourceReader, CURSOR_FILE, APPLIED_FILE };
+module.exports = { createSourceReader };

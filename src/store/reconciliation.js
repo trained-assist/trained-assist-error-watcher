@@ -140,4 +140,4 @@ function createReconciliationStore({ root, log, now = () => new Date() } = {}) {
   };
 }
 
-module.exports = { createReconciliationStore, reconciliationIdFor, ITEM_STATUSES };
+module.exports = { createReconciliationStore };

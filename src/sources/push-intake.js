@@ -25,13 +25,6 @@ function keyStoreScopes(keyStore, hash) {
   return [];
 }
 
-function timingSafeEqual(a, b) {
-  const left = Buffer.from(String(a));
-  const right = Buffer.from(String(b));
-  if (left.length !== right.length) return false;
-  return crypto.timingSafeEqual(left, right);
-}
-
 /**
  * @param {object} options
  * @param {string} options.root изолированный корень watcher'а
@@ -111,4 +104,4 @@ function createPushIntake({ root, sourceId, source, keyStore, log, now = () => n
   return { sourceId, receive };
 }
 
-module.exports = { createPushIntake, hashKey, REQUIRED_SCOPE };
+module.exports = { createPushIntake, hashKey };

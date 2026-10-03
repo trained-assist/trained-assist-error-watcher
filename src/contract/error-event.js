@@ -177,13 +177,4 @@ function allowsUserDelivery(event) {
   );
 }
 
-module.exports = {
-  normalizeErrorEvent,
-  allowsUserDelivery,
-  SCOPE_KINDS,
-  SEVERITIES,
-  OUTCOMES,
-  REPLY_STATUSES,
-  ORIGIN_KINDS,
-  MAX_SAFE_SUMMARY_LENGTH,
-};
+module.exports = { normalizeErrorEvent, allowsUserDelivery };

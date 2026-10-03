@@ -71,4 +71,4 @@ function createSelfErrorBucket({ root, log, now = () => new Date() } = {}) {
   return { record, list, count, cleanup };
 }
 
-module.exports = { createSelfErrorBucket, FILE, MAX_ENTRIES };
+module.exports = { createSelfErrorBucket };

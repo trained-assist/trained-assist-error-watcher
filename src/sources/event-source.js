@@ -65,4 +65,4 @@ function createEventSource({ root, sourceId, now = () => new Date() } = {}) {
   };
 }
 
-module.exports = { createEventSource, EVENTS_FILE };
+module.exports = { createEventSource };

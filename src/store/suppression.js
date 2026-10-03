@@ -231,10 +231,4 @@ function createSuppressionStore({ root, log, now = () => new Date(), config = {}
   };
 }
 
-module.exports = {
-  createSuppressionStore,
-  suppressionIdFor,
-  scopeKey,
-  isRuleActive,
-  RULE_KINDS,
-};
+module.exports = { createSuppressionStore, isRuleActive };

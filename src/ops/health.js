@@ -22,11 +22,12 @@ function rank(status) {
  * @param {object} [options.incidents]
  * @param {object} [options.dispatch]
  * @param {object} [options.reconciliation]
+ * @param {object} [options.selfErrors]
  * @param {object} [options.log]
  * @param {() => Date} [options.now]
  * @param {object} [options.config]
  */
-function createHealthAlarm({ root, sources = [], incidents, dispatch, reconciliation, log, now = () => new Date(), config = {} } = {}) {
+function createHealthAlarm({ root, sources = [], incidents, dispatch, reconciliation, selfErrors, log, now = () => new Date(), config = {} } = {}) {
   if (!root) throw new Error('health alarm requires an isolated root');
   let sourceList = Array.isArray(sources) ? sources.slice() : [];
 
@@ -72,6 +73,10 @@ function createHealthAlarm({ root, sources = [], incidents, dispatch, reconcilia
       }
     }
 
+    if (selfErrors && selfErrors.count() > maxSelfErrors) {
+      reasons.push({ code: 'SELF_ERRORS', status: STATUS_FAILING, detail: `${selfErrors.count()} watcher self errors in the bounded bucket` });
+    }
+
     if (incidents) {
       const open = incidents.activeCount();
       if (open > maxOpenIncidents) {
@@ -91,6 +96,7 @@ function createHealthAlarm({ root, sources = [], incidents, dispatch, reconcilia
         openIncidents: incidents ? incidents.activeCount() : 0,
         pendingDispatch: dispatch ? dispatch.backlog().length : 0,
         openReconciliation: reconciliation ? reconciliation.openCount() : 0,
+        selfErrors: selfErrors ? selfErrors.count() : 0,
       },
     };
     log?.write(status === STATUS_OK ? 'watcher.health_ok' : 'watcher.health_alarm', {

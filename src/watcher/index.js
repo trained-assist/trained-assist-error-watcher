@@ -73,6 +73,7 @@ function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile
     incidents,
     dispatch,
     reconciliation,
+    selfErrors,
     log,
     now: clock,
     config: mergedConfig,
@@ -99,8 +100,23 @@ function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile
   }
 
   function attachPushSource(spec, { keyStore }) {
-    const entry = registerSource(spec);
-    entry.intake = createPushIntake({ root, sourceId: entry.spec.sourceId, source: entry.source, keyStore, log, now: clock });
+    const registered = registry.register(spec);
+    const entrySource = createEventSource({ root, sourceId: registered.sourceId, now: clock });
+    const entryReader = createSourceReader({ root, sourceId: registered.sourceId, source: entrySource, log, now: clock });
+    const entry = { spec: registered, source: entrySource, reader: entryReader, intake: null };
+    sources.set(registered.sourceId, entry);
+    serviceIndex.set(registered.service, registered.sourceId);
+    health.setSources([
+      ...health.sources(),
+      {
+        sourceId: registered.sourceId,
+        source: entrySource,
+        reader: entryReader,
+        freshnessMs: registered.health.freshnessMs,
+        health: registered.health,
+      },
+    ]);
+    entry.intake = createPushIntake({ root, sourceId: registered.sourceId, source: entrySource, keyStore, log, now: clock });
     return entry;
   }
 
@@ -155,10 +171,10 @@ function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile
   }
 
   function ingestEvent(rawEvent) {
-    const { event, violations } = normalizeErrorEvent(rawEvent);
+    const { event, raw, violations } = normalizeErrorEvent(rawEvent);
     if (!event) {
       state.quarantinedCount += 1;
-      const item = reconciliation.quarantine({ event: null, violations, reasonCode: 'EVENT_NOT_OBJECT' });
+      const item = reconciliation.quarantine({ event: raw, violations, reasonCode: violations.length > 0 ? 'CONTRACT_VIOLATION' : 'EVENT_NOT_OBJECT' });
       return { eventId: null, fingerprint: null, decision: 'quarantined', incidentId: null, transition: null, suppressionId: null, dispatchId: null, delivery: 'none', reasonCode: 'EVENT_NOT_OBJECT', reconciliationId: item.reconciliationId };
     }
 
@@ -234,7 +250,7 @@ function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile
       });
     }
 
-    const { incident, transition } = incidents.ingest(event, fingerprint);
+    const { incident, transition, reasonCode: transitionReason } = incidents.ingest(event, fingerprint);
     state.ingestedCount += 1;
     const delivery = allowsUserDelivery(event) ? 'known_channel' : event.replyContext.status === 'web_only' ? 'web_only' : 'none';
 
@@ -266,7 +282,7 @@ function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile
       diagnosticUserTaskId,
       from: 'watcher',
       to: transition,
-      reasonCode: transition === 'opened' ? 'INCIDENT_OPENED' : transition === 'reopened' ? 'INCIDENT_REOPENED' : 'INCIDENT_DEDUPED',
+      reasonCode: transitionReason,
       detail: transition === 'deduped'
         ? 'the event joined the existing incident and its active diagnostic task; no second dispatch'
         : 'the incident is open with one active diagnostic task',
@@ -276,7 +292,7 @@ function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile
       affectedProfileCount: incident.affectedProfileRefs.length,
       affectedTaskReports: incident.affectedTaskReports,
       dispatchId,
-      reasonCode: dispatchReason,
+      dispatchReasonCode: dispatchReason,
       profileId: event.scope.kind === 'profile' ? event.scope.profileId : null,
       userTaskId: event.correlation.userTaskId || null,
       runId: event.correlation.runId || null,
@@ -292,7 +308,7 @@ function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile
       dispatchId,
       diagnosticUserTaskId,
       delivery,
-      reasonCode: dispatchReason || 'INCIDENT_AGGREGATED',
+      reasonCode: transitionReason,
       count: incident.count,
       suppressedCount: incident.suppressedCount,
       affectedProfileCount: incident.affectedProfileRefs.length,

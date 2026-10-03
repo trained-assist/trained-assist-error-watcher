@@ -114,9 +114,9 @@ function createIncidentStore({ root, log, now = () => new Date(), config = {} } 
     };
     addAffectedRef(incident, event);
     state.incidents[incidentId] = incident;
-    transition(incident, null, 'open', 'INCIDENT_OPENED', 'first event of this fingerprint in this scope');
+    const entry = transition(incident, null, 'open', 'INCIDENT_OPENED', 'first event of this fingerprint in this scope');
     persist();
-    return { incident, transition: 'opened' };
+    return { incident, transition: 'opened', reasonCode: entry.reasonCode };
   }
 
   function addAffectedRef(incident, event) {
@@ -177,22 +177,22 @@ function createIncidentStore({ root, log, now = () => new Date(), config = {} } 
       incident.state = 'open';
       incident.resolvedAt = null;
       incident.reopenCount += 1;
-      transition(incident, 'resolved', 'open', 'REGRESSION_AFTER_RESOLVE', 'a resolved incident received a new event of the same fingerprint');
+      const entry = transition(incident, 'resolved', 'open', 'REGRESSION_AFTER_RESOLVE', 'a resolved incident received a new event of the same fingerprint');
       persist();
-      return { incident, transition: 'reopened' };
+      return { incident, transition: 'reopened', reasonCode: entry.reasonCode };
     }
 
     if ((SEVERITY_RANK[event.error.severity] || 0) > (SEVERITY_RANK[incident.severity] || 0)) {
       const previous = incident.severity;
       incident.severity = event.error.severity;
-      transition(incident, previous, incident.severity, 'SEVERITY_ESCALATED', 'the same fingerprint arrived with a higher severity');
+      const entry = transition(incident, previous, incident.severity, 'SEVERITY_ESCALATED', 'the same fingerprint arrived with a higher severity');
       persist();
-      return { incident, transition: 'reopened' };
+      return { incident, transition: 'reopened', reasonCode: entry.reasonCode };
     }
 
-    transition(incident, 'open', 'open', 'INCIDENT_DEDUPED', 'repeat event aggregated into the existing incident; no second diagnosis');
+    const entry = transition(incident, 'open', 'open', 'INCIDENT_DEDUPED', 'repeat event aggregated into the existing incident; no second diagnosis');
     persist();
-    return { incident, transition: 'deduped' };
+    return { incident, transition: 'deduped', reasonCode: entry.reasonCode };
   }
 
   /**
@@ -207,9 +207,9 @@ function createIncidentStore({ root, log, now = () => new Date(), config = {} } 
     incident.suppressedCount += 1;
     incident.lastSeenAt = event.occurredAt;
     addAffectedRef(incident, event);
-    transition(incident, incident.state, incident.state, 'INCIDENT_SUPPRESSED', `event aggregated under suppression ${suppressionId}; no diagnosis, no delivery`);
+    const entry = transition(incident, incident.state, incident.state, 'INCIDENT_SUPPRESSED', `event aggregated under suppression ${suppressionId}; no diagnosis, no delivery`);
     persist();
-    return { incident, transition: 'suppressed' };
+    return { incident, transition: 'suppressed', reasonCode: entry.reasonCode };
   }
 
   /**

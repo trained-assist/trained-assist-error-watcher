@@ -42,7 +42,7 @@ const DEFAULT_SOURCE_SPEC = {
   scopeRules: ['profile'],
 };
 
-function makeWatcher({ name = 'watcher', clock, config = {}, sourceSpec = DEFAULT_SOURCE_SPEC, dispatcher } = {}) {
+function makeWatcher({ name = 'watcher', clock, config = {}, sourceSpec = DEFAULT_SOURCE_SPEC, dispatcher, registerDefault = true } = {}) {
   const root = makeRoot(name);
   const calls = [];
   const watcher = createErrorWatcher({
@@ -54,7 +54,7 @@ function makeWatcher({ name = 'watcher', clock, config = {}, sourceSpec = DEFAUL
       return { status: 'submitted', detail: 'fake sink' };
     }),
   });
-  watcher.registerSource(sourceSpec);
+  if (registerDefault) watcher.registerSource(sourceSpec);
   return { watcher, root, calls, sourceId: sourceSpec.sourceId };
 }
 

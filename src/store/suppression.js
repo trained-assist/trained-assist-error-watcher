@@ -7,7 +7,7 @@
 
 const crypto = require('crypto');
 const path = require('path');
-const { appendLine, readState, writeState } = require('./jsonl');
+const { appendLine, readState, writeState, readLines } = require('./jsonl');
 const { isExpired } = require('./retention');
 
 const RULES_FILE = 'suppression.jsonl';

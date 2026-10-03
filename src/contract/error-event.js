@@ -91,7 +91,7 @@ function normalizeSource(source) {
 function normalizeErrorEvent(raw) {
   const violations = [];
   if (!raw || typeof raw !== 'object') {
-    return { event: null, violations: ['EVENT_NOT_OBJECT'] };
+    return { event: null, raw: null, violations: ['EVENT_NOT_OBJECT'] };
   }
 
   if (!isNonEmptyString(raw.eventId)) violations.push('EVENT_ID_REQUIRED');
@@ -141,7 +141,7 @@ function normalizeErrorEvent(raw) {
   }
 
   if (violations.length > 0) {
-    return { event: null, violations };
+    return { event: null, raw, violations };
   }
 
   return {
@@ -156,6 +156,7 @@ function normalizeErrorEvent(raw) {
       error,
       origin,
     },
+    raw,
     violations: [],
   };
 }

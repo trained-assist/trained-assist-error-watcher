@@ -12,6 +12,19 @@ function hashKey(apiKey) {
   return crypto.createHash('sha256').update(String(apiKey)).digest('hex');
 }
 
+function keyStoreHas(keyStore, hash) {
+  if (keyStore && typeof keyStore.has === 'function') return keyStore.has(hash);
+  if (keyStore && typeof keyStore === 'object') return Object.prototype.hasOwnProperty.call(keyStore, hash);
+  return false;
+}
+
+function keyStoreScopes(keyStore, hash) {
+  if (keyStore && typeof keyStore.scopesFor === 'function') return keyStore.scopesFor(hash) || [];
+  if (keyStore && typeof keyStore.get === 'function') return keyStore.get(hash) || [];
+  if (keyStore && typeof keyStore === 'object') return keyStore[hash] || [];
+  return [];
+}
+
 function timingSafeEqual(a, b) {
   const left = Buffer.from(String(a));
   const right = Buffer.from(String(b));
@@ -36,11 +49,11 @@ function createPushIntake({ root, sourceId, source, keyStore, log, now = () => n
 
   function receive({ apiKey, scopes, event } = {}) {
     const provided = typeof apiKey === 'string' && apiKey.length > 0 ? hashKey(apiKey) : null;
-    const granted = provided && keyStore.has(provided) ? keyStore.scopesFor(provided) : [];
+    const granted = provided && keyStoreHas(keyStore, provided) ? keyStoreScopes(keyStore, provided) : [];
     const grantedScopes = Array.isArray(granted) ? granted : [];
     const requestedScopes = Array.isArray(scopes) ? scopes : [];
 
-    if (!provided || !keyStore.has(provided)) {
+    if (!provided || !keyStoreHas(keyStore, provided)) {
       log?.write('intake.auth_rejected', {
         sourceId,
         from: 'received',

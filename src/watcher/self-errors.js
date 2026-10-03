@@ -5,8 +5,9 @@
 // получился бы бесконечный цикл расследования собственного сбоя. Бакет
 // ограничен размером и виден health alarm'у.
 
+const fs = require('fs');
 const path = require('path');
-const { appendLine, readLines } = require('../store/jsonl');
+const { readLines } = require('../store/jsonl');
 
 const FILE = 'self-errors.jsonl';
 const MAX_ENTRIES = 100;
@@ -30,7 +31,11 @@ function createSelfErrorBucket({ root, log, now = () => new Date() } = {}) {
       safeSummary: event && event.error ? event.error.safeSummary : null,
       privateDetailsRef: event && event.error ? event.error.privateDetailsRef : null,
     };
-    appendLine(file, entry);
+    const entries = readLines(file);
+    entries.push(entry);
+    const kept = entries.length > MAX_ENTRIES ? entries.slice(-MAX_ENTRIES) : entries;
+    fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+    fs.writeFileSync(file, `${kept.map(item => JSON.stringify(item)).join('\n')}\n`, { mode: 0o600 });
     log?.write('diagnosis.self_error', {
       eventId: entry.eventId,
       from: 'watcher',

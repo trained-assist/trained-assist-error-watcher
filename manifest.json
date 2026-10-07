@@ -1,0 +1,328 @@
+{
+  "schemaVersion": 1,
+  "generatorVersion": "1.0.0",
+  "repomixVersion": "1.18.1",
+  "repository": "trained-assist/trained-assist-error-watcher",
+  "sourceSha": "4454eb88dfd8dd0110a0ed2e09ed4b1a0c371194",
+  "dirty": false,
+  "mapByteLimit": 8192,
+  "mapBytes": 2586,
+  "indexed": [
+    ".github/workflows/ci-fix-cleanup.yml",
+    ".github/workflows/ci.yml",
+    ".github/workflows/pr-autofix.yml",
+    ".github/workflows/repo-context.yml",
+    ".gitignore",
+    ".repo-context/.gitignore",
+    ".repo-context/repomix.config.json",
+    "AGENTS.md",
+    "README.md",
+    "docs/ERROR-WATCHER.md",
+    "docs/evidence/p27-incident-aggregation/transcript.json",
+    "docs/evidence/p27-incident-aggregation/transcript.sha256",
+    "package.json",
+    "scripts/check-syntax.js",
+    "scripts/sandbox/error-watcher-sandbox.cjs",
+    "src/contract/error-event.js",
+    "src/contract/event-log.js",
+    "src/contract/fingerprint.js",
+    "src/contract/version.js",
+    "src/diagnosis/deterministic.js",
+    "src/diagnosis/llm.js",
+    "src/http/intake-server.js",
+    "src/http/operational-server.js",
+    "src/ops/health.js",
+    "src/sources/event-source.js",
+    "src/sources/push-intake.js",
+    "src/sources/reader.js",
+    "src/sources/registry.js",
+    "src/store/dispatch.js",
+    "src/store/incidents.js",
+    "src/store/jsonl.js",
+    "src/store/reconciliation.js",
+    "src/store/retention.js",
+    "src/store/suppression.js",
+    "src/watcher/index.js",
+    "src/watcher/self-errors.js",
+    "tests/aggregation.test.js",
+    "tests/contract.test.js",
+    "tests/deterministic-diagnosis.test.js",
+    "tests/health.test.js",
+    "tests/helpers.js",
+    "tests/operational-server.test.js",
+    "tests/push-intake.test.js",
+    "tests/reader-cursor.test.js",
+    "tests/reconciliation.test.js",
+    "tests/retention.test.js",
+    "tests/self-loop.test.js",
+    "tests/suppression.test.js",
+    "tools/repo-context/.gitignore",
+    "tools/repo-context/map.py",
+    "tools/repo-context/package.json"
+  ],
+  "omittedFromMap": [],
+  "inventory": [
+    {
+      "path": ".github/workflows/ci-fix-cleanup.yml",
+      "bytes": 533
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "bytes": 631
+    },
+    {
+      "path": ".github/workflows/pr-autofix.yml",
+      "bytes": 1301
+    },
+    {
+      "path": ".github/workflows/repo-context.yml",
+      "bytes": 2886
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 62
+    },
+    {
+      "path": ".repo-context/.gitignore",
+      "bytes": 8
+    },
+    {
+      "path": ".repo-context/repomix.config.json",
+      "bytes": 901
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 475
+    },
+    {
+      "path": "README.md",
+      "bytes": 3850
+    },
+    {
+      "path": "docs/ERROR-WATCHER.md",
+      "bytes": 4456
+    },
+    {
+      "path": "docs/evidence/p27-incident-aggregation/transcript.json",
+      "bytes": 16447
+    },
+    {
+      "path": "docs/evidence/p27-incident-aggregation/transcript.sha256",
+      "bytes": 65
+    },
+    {
+      "path": "package.json",
+      "bytes": 578
+    },
+    {
+      "path": "scripts/check-syntax.js",
+      "bytes": 1280
+    },
+    {
+      "path": "scripts/sandbox/error-watcher-sandbox.cjs",
+      "bytes": 32192
+    },
+    {
+      "path": "src/contract/error-event.js",
+      "bytes": 6973
+    },
+    {
+      "path": "src/contract/event-log.js",
+      "bytes": 3260
+    },
+    {
+      "path": "src/contract/fingerprint.js",
+      "bytes": 2370
+    },
+    {
+      "path": "src/contract/version.js",
+      "bytes": 711
+    },
+    {
+      "path": "src/diagnosis/deterministic.js",
+      "bytes": 6148
+    },
+    {
+      "path": "src/diagnosis/llm.js",
+      "bytes": 4698
+    },
+    {
+      "path": "src/http/intake-server.js",
+      "bytes": 2280
+    },
+    {
+      "path": "src/http/operational-server.js",
+      "bytes": 6484
+    },
+    {
+      "path": "src/ops/health.js",
+      "bytes": 5544
+    },
+    {
+      "path": "src/sources/event-source.js",
+      "bytes": 1981
+    },
+    {
+      "path": "src/sources/push-intake.js",
+      "bytes": 4434
+    },
+    {
+      "path": "src/sources/reader.js",
+      "bytes": 4919
+    },
+    {
+      "path": "src/sources/registry.js",
+      "bytes": 3614
+    },
+    {
+      "path": "src/store/dispatch.js",
+      "bytes": 4665
+    },
+    {
+      "path": "src/store/incidents.js",
+      "bytes": 13332
+    },
+    {
+      "path": "src/store/jsonl.js",
+      "bytes": 1205
+    },
+    {
+      "path": "src/store/reconciliation.js",
+      "bytes": 4985
+    },
+    {
+      "path": "src/store/retention.js",
+      "bytes": 1341
+    },
+    {
+      "path": "src/store/suppression.js",
+      "bytes": 8803
+    },
+    {
+      "path": "src/watcher/index.js",
+      "bytes": 19279
+    },
+    {
+      "path": "src/watcher/self-errors.js",
+      "bytes": 2859
+    },
+    {
+      "path": "tests/aggregation.test.js",
+      "bytes": 5012
+    },
+    {
+      "path": "tests/contract.test.js",
+      "bytes": 4346
+    },
+    {
+      "path": "tests/deterministic-diagnosis.test.js",
+      "bytes": 7064
+    },
+    {
+      "path": "tests/health.test.js",
+      "bytes": 3610
+    },
+    {
+      "path": "tests/helpers.js",
+      "bytes": 4114
+    },
+    {
+      "path": "tests/operational-server.test.js",
+      "bytes": 7023
+    },
+    {
+      "path": "tests/push-intake.test.js",
+      "bytes": 5036
+    },
+    {
+      "path": "tests/reader-cursor.test.js",
+      "bytes": 4812
+    },
+    {
+      "path": "tests/reconciliation.test.js",
+      "bytes": 4877
+    },
+    {
+      "path": "tests/retention.test.js",
+      "bytes": 4382
+    },
+    {
+      "path": "tests/self-loop.test.js",
+      "bytes": 2944
+    },
+    {
+      "path": "tests/suppression.test.js",
+      "bytes": 8007
+    },
+    {
+      "path": "tools/repo-context/.gitignore",
+      "bytes": 14
+    },
+    {
+      "path": "tools/repo-context/map.py",
+      "bytes": 4513
+    },
+    {
+      "path": "tools/repo-context/package.json",
+      "bytes": 198
+    }
+  ],
+  "configSha256": "c8bb3adc42afdf7e2efbfbc7a65e07f11086e3e72204527a365b7f671c75db68",
+  "packedPaths": [
+    ".github/workflows/ci-fix-cleanup.yml",
+    ".github/workflows/ci.yml",
+    ".github/workflows/pr-autofix.yml",
+    ".github/workflows/repo-context.yml",
+    ".repo-context/repomix.config.json",
+    "scripts/sandbox/error-watcher-sandbox.cjs",
+    "scripts/check-syntax.js",
+    "src/contract/error-event.js",
+    "src/contract/event-log.js",
+    "src/contract/fingerprint.js",
+    "src/contract/version.js",
+    "src/diagnosis/deterministic.js",
+    "src/diagnosis/llm.js",
+    "src/http/intake-server.js",
+    "src/http/operational-server.js",
+    "src/ops/health.js",
+    "src/sources/event-source.js",
+    "src/sources/push-intake.js",
+    "src/sources/reader.js",
+    "src/sources/registry.js",
+    "src/store/dispatch.js",
+    "src/store/incidents.js",
+    "src/store/jsonl.js",
+    "src/store/reconciliation.js",
+    "src/store/retention.js",
+    "src/store/suppression.js",
+    "src/watcher/index.js",
+    "src/watcher/self-errors.js",
+    "tests/aggregation.test.js",
+    "tests/contract.test.js",
+    "tests/deterministic-diagnosis.test.js",
+    "tests/health.test.js",
+    "tests/helpers.js",
+    "tests/operational-server.test.js",
+    "tests/push-intake.test.js",
+    "tests/reader-cursor.test.js",
+    "tests/reconciliation.test.js",
+    "tests/retention.test.js",
+    "tests/self-loop.test.js",
+    "tests/suppression.test.js",
+    "tools/repo-context/map.py",
+    "tools/repo-context/package.json",
+    "package.json",
+    "README.md"
+  ],
+  "packScope": "repomix.config.json allowlist; Markdown is not AST-compressed",
+  "files": {
+    "REPO-MAP.md": {
+      "bytes": 2586,
+      "sha256": "5d8c1a7a2bf1d1a31d1b31042d6e27700cf0375ccd8e7ba8f3cc92a80c572135"
+    },
+    "repo-compressed.xml": {
+      "bytes": 41531,
+      "sha256": "ac68ab0100c0a99521ee63ecc1241798f02c2b1192f667f0b62a045ffaf082fd"
+    }
+  }
+}

@@ -1,0 +1,1156 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files and files not matching ignore patterns, combined into a single document by Repomix.
+The content has been processed where empty lines have been removed, line numbers have been added, content has been compressed (code blocks are separated by ⋮---- delimiter).
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: **/*.js, **/*.mjs, **/*.cjs, **/*.ts, **/*.py, **/*.sh, **/*.yml, **/*.yaml, README.md, package.json, **/package.json, .repo-context/repomix.config.json
+- Files matching these patterns are excluded: **/node_modules/**, **/dist/**, **/coverage/**, **/logs/**, **/*.log, **/.env*, **/*secrets*, **/*credentials*, **/*.pem, **/*.key, **/package-lock.json, .repo-context/output/**, **/results.json, **/pgdata/**, **/.wrangler/**
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Empty lines have been removed from all files
+- Line numbers have been added to the beginning of each line
+- Content has been compressed - code blocks are separated by ⋮---- delimiter
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.github/
+  workflows/
+    ci-fix-cleanup.yml
+    ci.yml
+    pr-autofix.yml
+    repo-context.yml
+.repo-context/
+  repomix.config.json
+scripts/
+  sandbox/
+    error-watcher-sandbox.cjs
+  check-syntax.js
+src/
+  contract/
+    error-event.js
+    event-log.js
+    fingerprint.js
+    version.js
+  diagnosis/
+    deterministic.js
+    llm.js
+  http/
+    intake-server.js
+    operational-server.js
+  ops/
+    health.js
+  sources/
+    event-source.js
+    push-intake.js
+    reader.js
+    registry.js
+  store/
+    dispatch.js
+    incidents.js
+    jsonl.js
+    reconciliation.js
+    retention.js
+    suppression.js
+  watcher/
+    index.js
+    self-errors.js
+tests/
+  aggregation.test.js
+  contract.test.js
+  deterministic-diagnosis.test.js
+  health.test.js
+  helpers.js
+  operational-server.test.js
+  push-intake.test.js
+  reader-cursor.test.js
+  reconciliation.test.js
+  retention.test.js
+  self-loop.test.js
+  suppression.test.js
+tools/
+  repo-context/
+    map.py
+    package.json
+package.json
+README.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".github/workflows/ci-fix-cleanup.yml">
+# Managed by the trained-assist-engineering pr-autofix service.
+# Cleanup for trained-assist/trained-assist-error-watcher — change the service registration, not this file.
+# Delegates to the pinned pr-autofix cleanup callable when a PR closes.
+name: CI Fix Cleanup
+on:
+  pull_request:
+    types: [closed]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  cleanup:
+    uses: trained-assist/pr-autofix/.github/workflows/ci-fix-cleanup.yml@v1.7.8
+    secrets:
+      gh_token: ${{ secrets.AUTOFIX_PAT || github.token }}
+</file>
+
+<file path=".github/workflows/ci.yml">
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Syntax check
+        run: npm run check
+      - name: Contract and acceptance tests
+        run: npm test
+      - name: Sandbox scenario (stage I09, card P27)
+        run: npm run sandbox
+      - name: Evidence is reproducible
+        run: npm run evidence:verify
+</file>
+
+<file path=".github/workflows/pr-autofix.yml">
+# Managed by the trained-assist-engineering pr-autofix service.
+# Installed for trained-assist/trained-assist-error-watcher — change the service registration, not this file.
+#
+# Trigger: the repository CI workflow named below completes. The pinned
+# callable only acts on a pull-request CI run that failed, and never on an
+# already-fix branch (fix/ci-*), so it cannot loop on its own fixes.
+name: PR Autofix
+on:
+  workflow_run:
+    workflows: ["Repository context"]
+    types: [completed]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  autofix:
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.pull_requests[0] != null &&
+      !startsWith(github.event.workflow_run.head_branch, 'fix/ci-')
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: trained-assist/pr-autofix/.github/workflows/autofix-callable.yml@v1.7.8
+    with:
+      pr_number: ${{ github.event.workflow_run.pull_requests[0].number }}
+      original_branch: ${{ github.event.workflow_run.head_branch }}
+      run_id: ${{ github.event.workflow_run.id }}
+    secrets:
+      llm_ladder_token: ${{ secrets.LLM_LADDER_TOKEN }}
+      gh_token: ${{ secrets.AUTOFIX_PAT || github.token }}
+</file>
+
+<file path=".github/workflows/repo-context.yml">
+name: Repository context
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  context:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: tools/repo-context/package-lock.json
+      - name: Install pinned packer only (no application build)
+        run: npm ci --prefix tools/repo-context --ignore-scripts
+      - name: Generate structural pack and bounded map
+        run: |
+          mkdir -p .repo-context/output
+          tools/repo-context/node_modules/.bin/repomix --config .repo-context/repomix.config.json
+          python3 tools/repo-context/map.py
+      - name: Upload source-pinned context
+        uses: actions/upload-artifact@v4
+        with:
+          name: repo-context-${{ github.sha }}
+          path: .repo-context/output/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Show entry point
+        run: cat .repo-context/output/REPO-MAP.md >> "$GITHUB_STEP_SUMMARY"
+  publish-main:
+    needs: context
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: repo-context-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: repo-context-${{ github.sha }}
+          path: context
+      - name: Publish generated files to separate branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -eu
+          export GIT_CONFIG_COUNT=1
+          export GIT_CONFIG_KEY_0=http.https://github.com/.extraheader
+          export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          remote="https://github.com/$SOURCE_REPO.git"
+          latest=$(git ls-remote "$remote" refs/heads/main | cut -f1)
+          if [ "$latest" != "$SOURCE_SHA" ]; then
+            echo 'Source is no longer main HEAD; skip stale publication.'
+            exit 0
+          fi
+          cd context
+          git init -b repo-context
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git remote add origin "$remote"
+          old=$(git ls-remote origin refs/heads/repo-context | cut -f1)
+          git add REPO-MAP.md repo-compressed.xml manifest.json
+          git commit -m "context for $SOURCE_SHA"
+          git push --force-with-lease="refs/heads/repo-context:$old" origin HEAD:refs/heads/repo-context
+</file>
+
+<file path=".repo-context/repomix.config.json">
+{
+  "input": { "maxFileSize": 200000 },
+  "output": {
+    "filePath": ".repo-context/output/repo-compressed.xml",
+    "style": "xml",
+    "compress": true,
+    "showLineNumbers": true,
+    "removeEmptyLines": true,
+    "git": { "sortByChanges": false, "includeDiffs": false, "includeLogs": false }
+  },
+  "include": ["**/*.js", "**/*.mjs", "**/*.cjs", "**/*.ts", "**/*.py", "**/*.sh", "**/*.yml", "**/*.yaml", "README.md", "package.json", "**/package.json", ".repo-context/repomix.config.json"],
+  "ignore": {
+    "useGitignore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": ["**/node_modules/**", "**/dist/**", "**/coverage/**", "**/logs/**", "**/*.log", "**/.env*", "**/*secrets*", "**/*credentials*", "**/*.pem", "**/*.key", "**/package-lock.json", ".repo-context/output/**", "**/results.json", "**/pgdata/**", "**/.wrangler/**"]
+  },
+  "security": { "enableSecurityCheck": true }
+}
+</file>
+
+<file path="scripts/sandbox/error-watcher-sandbox.cjs">
+// Сценарий этапа I09 для Error Watcher (карточка P27, эпик E6 #22).
+//
+// Одна команда: setup → run → evidence → teardown. Песочница живёт в
+// `.sandbox/p27-<pid>/` (в .gitignore), наружу не ходит: только loopback и
+// виртуальные часы, поэтому transcript воспроизводим побайтово — это проверяет
+// `npm run evidence:verify` в CI.
+//
+// Запуск:
+//   node scripts/sandbox/error-watcher-sandbox.cjs            # пишет evidence
+//   node scripts/sandbox/error-watcher-sandbox.cjs --verify   # сверка с закоммиченным transcript
+⋮----
+function now()
+function advance(ms)
+⋮----
+function scenario(name, fault, fn)
+⋮----
+function step(event, fields)
+⋮----
+function check(name, passed, detail)
+⋮----
+function assertEqual(name, actual, expected)
+⋮----
+function assertIncludes(name, haystack, needle)
+⋮----
+function makeRoot(name)
+⋮----
+async function teardownAll()
+⋮----
+function engineError(
+⋮----
+function platformError(
+⋮----
+/**
+ * Изолированный стек этапа: зарегистрированный источник, точный fingerprint
+ * store, scoped suppression, reconciliation и fake sink для dispatch-интентов.
+ * LLM/OpenCode не вызываются: приёмник интентов — счётчик в памяти.
+ */
+function buildStack(
+⋮----
+dispatcher: intent => {
+      calls.push(intent.dispatchId);
+⋮----
+function feed(watcher, sourceId, count,
+⋮----
+function drain(watcher, sourceId)
+⋮----
+function fingerprintOf(event)
+⋮----
+async function run()
+⋮----
+// 1. PR-26: шторм из 1000 событий с нулевым расходом → один инцидент, один dispatch.
+⋮----
+// 2. Timed mute: причина, автор, срок; повторы агрегируются, не исчезают.
+⋮----
+// 3. Expiry: после срока правило перестаёт матчиться, инцидент переоткрывается.
+⋮----
+// 4. Regression: решённый инцидент получает новое событие того же fingerprint.
+⋮----
+// 5. Unknown profile: reconciliation, а не случайная доставка пользователю.
+⋮----
+// 6. Незарегистрированный источник не парсится.
+⋮----
+// 7. Platform outage: инцидент без профиля, доставки пользователям нет.
+⋮----
+// 8. Self-loop guard: ошибка самого watcher'а не порождает диагностику себя.
+⋮----
+// 9. Глубина диагностики: превышение лимита останавливает рекурсию.
+⋮----
+// 10. Retention: ускоренные часы архивируют решённые инциденты, активные не трогают.
+⋮----
+// 11. Health alarm: независимый детерминированный сигнал, его не глушит mute.
+⋮----
+// 12. Подключение внешней установки: ключ, scopes, durable receipt, dedup.
+⋮----
+// 13. Переполнение журнала источника: dropped-count виден, курсор рестартит.
+⋮----
+// 14. Fidelity: что эмулировано и что требует живого провайдера.
+⋮----
+function renderTranscript(results)
+⋮----
+function sanitizeTranscript(transcript)
+⋮----
+function writeEvidence(outDir, transcript)
+⋮----
+function main()
+</file>
+
+<file path="scripts/check-syntax.js">
+// Синтаксис всех модулей репозитория: дешёвая проверка до тестов и сценария.
+</file>
+
+<file path="src/contract/error-event.js">
+// Нормализация и проверка ErrorEvent по C12 (OBSERVABILITY-AND-ERROR-CONTRACT).
+// Нарушения контракта — не повод выбросить событие и не повод угадать
+// пользователя: событие уходит в quarantine для ops reconciliation.
+⋮----
+function isNonEmptyString(value)
+⋮----
+function isIsoTimestamp(value)
+⋮----
+function normalizeOrigin(origin)
+⋮----
+function normalizeReplyContext(replyContext)
+⋮----
+function normalizeScope(scope)
+⋮----
+function normalizeCorrelation(correlation)
+⋮----
+function normalizeError(error)
+⋮----
+function normalizeSource(source)
+⋮----
+/**
+ * @param {object} raw событие от зарегистрированного источника
+ * @returns {{event: object|null, violations: string[]}}
+ */
+function normalizeErrorEvent(raw)
+⋮----
+/**
+ * Может ли событие породить адресную пользовательскую доставку. Только
+ * profile-scope с известным каналом; всё остальное — Web/task API либо
+ * reconciliation, никогда случайный получатель.
+ */
+function allowsUserDelivery(event)
+</file>
+
+<file path="src/contract/event-log.js">
+// Единый журнал событий watcher'а. Формат записи — тот же, что у P25
+// (integration-gate): log.write(event, { from, to, reasonCode, detail, ...ids }).
+// Значения секретов и сырые payload'ы в запись не попадают: сырые данные уходят
+// только в privateDetailsRef (INV-12, C12).
+⋮----
+function isSensitiveKey(key)
+⋮----
+function sanitizeFields(fields)
+⋮----
+function appendLine(file, line)
+⋮----
+function readLines(file)
+⋮----
+/**
+ * @param {object} options
+ * @param {string} options.file изолированный файл лога (production-логи неприкосновенны)
+ * @param {() => Date} [options.now]
+ * @param {(entry: object) => void} [options.sink] дополнительный durable sink
+ */
+function createEventLog(
+⋮----
+function write(event, fields =
+⋮----
+function error(
+⋮----
+entries: ()
+close: ()
+</file>
+
+<file path="src/contract/fingerprint.js">
+// Детерминированный точный fingerprint дефекта. Bloom filter здесь не используется
+// как источник решения «не рассматривать»: вероятностный фильтр способен скрыть
+// новое событие, поэтому решения принимает точный store по этому digest'у.
+//
+// В fingerprint не входят severity и scope: изменение severity или расширение
+// затронутого scope должно переоткрыть тот же инцидент, а не плодить второй.
+// Профиль тоже не входит: один инцидент может затрагивать много исходных задач.
+⋮----
+function normalizeFrame(frame)
+⋮----
+function normalizeStackLocation(stack)
+⋮----
+function fingerprintParts(event)
+⋮----
+function fingerprintFor(event)
+</file>
+
+<file path="src/contract/version.js">
+// Версии контрактов, которые реализует этот репозиторий. Второй набор терминов
+// не заводим: C12 — общий observability-контракт (registered sources → readers),
+// C13 — граница watcher → Task admission. Формат записи лога повторяет P25
+// (integration-gate, src/contract/events.js): log.write(event, {from,to,reasonCode,detail,...ids}).
+</file>
+
+<file path="src/diagnosis/deterministic.js">
+match: (incident)
+diagnose: (incident) => (
+⋮----
+function diagnose(incident)
+⋮----
+// continue to next rule
+⋮----
+function knownClasses()
+</file>
+
+<file path="src/diagnosis/llm.js">
+function createLlmDiagnosis(
+⋮----
+function canDispatch(incidentId)
+⋮----
+function recordDispatch(incidentId)
+⋮----
+return
+⋮----
+function buildLlmPrompt(incident)
+⋮----
+function parseLlmResponse(text)
+⋮----
+function createLlmDiagnosisDispatch(
+⋮----
+async function dispatch(incident)
+</file>
+
+<file path="src/http/intake-server.js">
+// Минимальный loopback HTTP-транспорт для http_push источников. Только
+// 127.0.0.1, один endpoint, ключ в заголовке. Это транспорт песочницы, не
+// production ingress: внешний доступ объявляется отдельно.
+⋮----
+function readBody(req)
+⋮----
+/**
+ * @param {object} options
+ * @param {object} options.intake createPushIntake
+ * @param {number} [options.port]
+ */
+function createIntakeServer(
+⋮----
+function start()
+⋮----
+function stop()
+</file>
+
+<file path="src/http/operational-server.js">
+function authenticate(req, keyStore)
+⋮----
+function sendJson(res, status, body)
+⋮----
+function listIncidents(incidents,
+⋮----
+function getIncident(incidents, incidentId)
+⋮----
+function getSourceHealth(watcher, sourceId)
+⋮----
+/**
+ * @param {object} options
+ * @param {object} options.watcher createErrorWatcher instance
+ * @param {object} options.keyStore { has(hash), scopesFor(hash) }
+ * @param {number} [options.port]
+ */
+function createOperationalServer(
+⋮----
+function start()
+⋮----
+function stop()
+</file>
+
+<file path="src/ops/health.js">
+// Независимый deterministic health alarm (AC-274). Он читает только durable
+// состояние (журналы источников, курсоры, инциденты, dispatch, reconciliation)
+// и не зависит от собственного журнала ошибок watcher'а: подавление шума не
+// может заглушить тревогу о неработающем watcher'е.
+⋮----
+/**
+ * @param {object} options
+ * @param {string} options.root изолированный корень watcher'а
+ * @param {Array<{sourceId: string, source: object, reader: object, freshnessMs: number}>} options.sources
+ * @param {object} [options.incidents]
+ * @param {object} [options.dispatch]
+ * @param {object} [options.reconciliation]
+ * @param {object} [options.selfErrors]
+ * @param {object} [options.log]
+ * @param {() => Date} [options.now]
+ * @param {object} [options.config]
+ */
+function createHealthAlarm(
+⋮----
+function evaluate()
+⋮----
+setSources(next)
+sources: ()
+</file>
+
+<file path="src/sources/event-source.js">
+// Durable журнал событий источника (producer side). Watcher читает этот журнал
+// через reader с cursor/replay/dedup и никогда его не удаляет: исходные ошибки
+// сохраняются, suppression работает по fingerprint, а не удалением исходников.
+⋮----
+function appendLine(file, line)
+⋮----
+function readLines(file)
+⋮----
+/**
+ * @param {object} options
+ * @param {string} options.root изолированный корень источника
+ * @param {string} options.sourceId
+ * @param {() => Date} [options.now]
+ */
+function createEventSource(
+⋮----
+function append(event)
+⋮----
+entries: ()
+truncate: () =>
+size: ()
+</file>
+
+<file path="src/sources/push-intake.js">
+// Приём событий от внешней установки (transport http_push): ключ и scopes,
+// durable receipt, dedup по eventId. Подключение watcher'а к другой установке
+// идёт только через эту границу; значения ключей в код и логи не попадают.
+⋮----
+function hashKey(apiKey)
+⋮----
+function keyStoreHas(keyStore, hash)
+⋮----
+function keyStoreScopes(keyStore, hash)
+⋮----
+/**
+ * @param {object} options
+ * @param {string} options.root изолированный корень watcher'а
+ * @param {string} options.sourceId
+ * @param {object} options.source durable журнал источника (createEventSource)
+ * @param {object} options.keyStore { has(hash), scopesFor(hash) }
+ * @param {object} [options.log]
+ * @param {() => Date} [options.now]
+ */
+function createPushIntake(
+⋮----
+function receive(
+</file>
+
+<file path="src/sources/reader.js">
+// Reader зарегистрированного источника (C12): cursor, replay, dedup по eventId,
+// bounded batch и видимый dropped-count при переполнении/ротации журнала.
+// Журнал источника не изменяется: читаем только вперёд от курсора.
+⋮----
+function readLines(file)
+⋮----
+function appendLine(file, line)
+⋮----
+/**
+ * @param {object} options
+ * @param {string} options.root изолированный корень watcher'а
+ * @param {string} options.sourceId
+ * @param {object} options.source durable журнал источника (createEventSource)
+ * @param {object} [options.log]
+ * @param {() => Date} [options.now]
+ * @param {number} [options.batchSize]
+ */
+function createSourceReader(
+⋮----
+function loadCursor()
+⋮----
+function persistCursor()
+⋮----
+function markApplied(eventId)
+⋮----
+/**
+   * Один poll: не более batchSize новых событий. Повторные eventId считаются
+   * дублями доставки и не отдаются повторно (dedup по eventId, не по содержимому).
+   */
+function poll()
+⋮----
+function resetCursor()
+⋮----
+cursor: ()
+deliveredCount: ()
+appliedCount: ()
+</file>
+
+<file path="src/sources/registry.js">
+// Реестр зарегистрированных источников ошибок (C12). Watcher читает только
+// зарегистрированные источники и не парсит произвольные файлы сервисов.
+⋮----
+function createSourceRegistry(
+⋮----
+function register(spec)
+⋮----
+function get(sourceId)
+⋮----
+function list()
+⋮----
+function has(sourceId)
+⋮----
+function markSeen(sourceId)
+</file>
+
+<file path="src/store/dispatch.js">
+// Журнал dispatch-интентов диагностики и их квитанций. Здесь считается бюджет
+// вызовов: шторм событий не превращается в шторм вызовов LLM/OpenCode — на один
+// инцидент не более одной активной diagnostic Task и не более
+// maxDispatchesPerIncident попыток, плюс глобальное окно бюджета. Избыток
+// виден в backlog, а не теряется молча.
+⋮----
+function dispatchIdFor(incidentId, diagnosticUserTaskId)
+⋮----
+/**
+ * @param {object} options
+ * @param {string} options.root изолированный корень watcher'а
+ * @param {object} [options.log]
+ * @param {() => Date} [options.now]
+ * @param {object} [options.config]
+ */
+function createDispatchLedger(
+⋮----
+function persist()
+⋮----
+function intentsInWindow(nowDate)
+⋮----
+function canDispatch(nowDate = now())
+⋮----
+function record(
+⋮----
+function receipt(dispatchId,
+⋮----
+function list()
+⋮----
+function backlog()
+⋮----
+function counts()
+⋮----
+entries: ()
+</file>
+
+<file path="src/store/incidents.js">
+// Точный store инцидентов: fingerprint-индекс, счётчики дублей, одна активная
+// diagnostic Task на инцидент, reopen по regression/expiry/severity/scope.
+// Suppression ничего не удаляет: исходные события остаются в журнале источника,
+// здесь живут только агрегаты и ссылки.
+⋮----
+function incidentIdFor(fingerprint, scope)
+⋮----
+function diagnosticTaskIdFor(incidentId, attempt)
+⋮----
+function scopeOf(event)
+⋮----
+/**
+ * @param {object} options
+ * @param {string} options.root изолированный корень watcher'а
+ * @param {object} [options.log]
+ * @param {() => Date} [options.now]
+ * @param {object} [options.config]
+ */
+function createIncidentStore(
+⋮----
+function persist()
+⋮----
+function transition(incident, from, to, reasonCode, detail)
+⋮----
+function findIncident(fingerprint, scope)
+⋮----
+function openIncident(event, fingerprint)
+⋮----
+function addAffectedRef(incident, event)
+⋮----
+/**
+   * Агрегация события. Возвращает переход: opened | deduped | reopened.
+   */
+function ingest(event, fingerprint)
+⋮----
+/**
+   * Событие пришло под активной suppression-правилом. Инцидент не удаляется и не
+   * закрывается: копим count/suppressedCount, исходники остаются в журнале.
+   */
+function recordSuppressed(event, fingerprint, suppressionId)
+⋮----
+/**
+   * Одна активная diagnostic Task на инцидент (AC-270). Новые события дополняют
+   * её, второй слот не открывается. Возвращает существующий слот, если он активен.
+   */
+function openDiagnosticSlot(incident)
+⋮----
+function appendToDiagnosticSlot(incident, event)
+⋮----
+function closeDiagnosticSlot(incident, status)
+⋮----
+function canDispatch(incident)
+⋮----
+function countDispatch(incident)
+⋮----
+function resolve(incidentId,
+⋮----
+function get(incidentId)
+⋮----
+function list()
+⋮----
+function activeCount()
+⋮----
+/**
+   * Retention: архивируем только завершённые инциденты старше TTL. Активные
+   * инциденты и курсоры не стираются (AC-18).
+   */
+function cleanup(nowDate = now())
+⋮----
+function summary()
+</file>
+
+<file path="src/store/jsonl.js">
+// Общий durable JSONL-хелпер для хранилищ watcher'а. Файлы живут в
+// изолированном корне песочницы (0600), в git не коммитятся.
+⋮----
+function appendLine(file, line)
+⋮----
+function readLines(file)
+⋮----
+function writeState(file, state)
+⋮----
+function readState(file, fallback)
+</file>
+
+<file path="src/store/reconciliation.js">
+// Quarantine для событий с нарушением контракта (C12): отсутствующий профиль у
+// profile-scope, незарегистрированный источник, неполный replyContext. Событие
+// не выбрасывается и не уходит случайному пользователю: оно ждёт ops
+// reconciliation. В журнал — только safeSummary и privateDetailsRef.
+⋮----
+function reconciliationIdFor(eventId, occurredAt)
+⋮----
+/**
+ * @param {object} options
+ * @param {string} options.root изолированный корень watcher'а
+ * @param {object} [options.log]
+ * @param {() => Date} [options.now]
+ */
+function createReconciliationStore(
+⋮----
+function persist()
+⋮----
+function quarantine(
+⋮----
+function resolve(reconciliationId,
+⋮----
+function get(reconciliationId)
+⋮----
+function list()
+⋮----
+function openCount()
+⋮----
+function cleanup(nowDate = now())
+⋮----
+entries: ()
+</file>
+
+<file path="src/store/retention.js">
+// Retention-классы и TTL (OBSERVABILITY-AND-ERROR-CONTRACT, «TTL: предлагаемая
+// стартовая политика»). Числа — предложение этапа, задаются конфигом до
+// включения sink. Suppression rule живёт до expiresAt либо до revoke.
+⋮----
+function ttlForClass(retentionClass, config = DEFAULT_CONFIG)
+⋮----
+function isExpired(createdAt, ttlMs, now)
+</file>
+
+<file path="src/store/suppression.js">
+// Suppression-правила: timed mute и permanent ignore, всегда scoped и всегда с
+// причиной и автором. Wildcard на всю платформу запрещён (AC-273): правило
+// обязано фиксировать точный fingerprint и хотя бы одну границу scope.
+// Permanent ignore живёт до revoke и остаётся в аудите.
+⋮----
+function suppressionIdFor(
+⋮----
+function scopeKey(scope)
+⋮----
+function isRuleActive(rule, now)
+⋮----
+function scopeMatches(ruleScope, scope)
+⋮----
+/**
+ * @param {object} options
+ * @param {string} options.root изолированный корень watcher'а
+ * @param {object} [options.log]
+ * @param {() => Date} [options.now]
+ * @param {object} [options.config]
+ */
+function createSuppressionStore(
+⋮----
+function persist()
+⋮----
+function audit(entry)
+⋮----
+function create(
+⋮----
+function revoke(suppressionId,
+⋮----
+/**
+   * Активное правило для этого fingerprint и scope. Просроченные правила не
+   * матчатся и одинчасно помечаются expiredAt — именно это переоткрывает инцидент
+   * для диагностики (reopen по expiry).
+   */
+function match(fingerprint, scope, nowDate = now())
+⋮----
+function list()
+⋮----
+function auditEntries()
+⋮----
+function cleanup(nowDate = now())
+</file>
+
+<file path="src/watcher/index.js">
+// Error Watcher: читает зарегистрированные источники ошибок, агрегирует события в
+// инциденты по точному fingerprint, применяет scoped suppression и выдаёт
+// не более одного dispatch-интента на активную diagnostic Task.
+//
+// Diagnosis: deterministic для известных классов (I11), LLM для novel (I12).
+// LLM/OpenCode диагностика, отчёт и issue — отдельная карточка (P28); здесь только
+// агрегация, suppression, reconciliation и dispatch routing.
+⋮----
+function isSelfOrigin(origin)
+⋮----
+/**
+ * @param {object} options
+ * @param {string} options.root изолированный корень песочницы
+ * @param {() => Date} [options.now]
+ * @param {object} [options.config]
+ * @param {string} [options.logFile]
+ * @param {(intent: object) => object} [options.dispatcher] приёмник dispatch-интентов (fake sink в песочнице)
+ * @param {object} [options.llmClient] опциональный LLM-клиент для novel-диагностики
+ */
+function createErrorWatcher(
+⋮----
+function registerSource(spec,
+⋮----
+function attachPushSource(spec,
+⋮----
+function sourceForEvent(event)
+⋮----
+function dispatchIntent(incident, event, slot)
+⋮----
+function ingestEvent(rawEvent)
+⋮----
+function poll(sourceId)
+⋮----
+function pollAll()
+⋮----
+function mute(
+⋮----
+function ignore(
+⋮----
+function revoke(suppressionId, details)
+⋮----
+function resolveIncident(incidentId, details)
+⋮----
+function closeDiagnosticSlot(incidentId, status)
+⋮----
+function cleanup()
+⋮----
+function summary()
+</file>
+
+<file path="src/watcher/self-errors.js">
+// Ограниченный бакет ошибок самого watcher'а (origin.kind = watcher_*). Такие
+// события не агрегируются в инциденты и не порождают диагностику себя: иначе
+// получился бы бесконечный цикл расследования собственного сбоя. Бакет
+// ограничен размером и виден health alarm'у.
+⋮----
+/**
+ * @param {object} options
+ * @param {string} options.root изолированный корень watcher'а
+ * @param {object} [options.log]
+ * @param {() => Date} [options.now]
+ */
+function createSelfErrorBucket(
+⋮----
+function record(event, reasonCode)
+⋮----
+function list()
+⋮----
+function count()
+⋮----
+function cleanup()
+</file>
+
+<file path="tests/aggregation.test.js">
+
+</file>
+
+<file path="tests/contract.test.js">
+
+</file>
+
+<file path="tests/deterministic-diagnosis.test.js">
+function makeIncident(overrides =
+</file>
+
+<file path="tests/health.test.js">
+
+</file>
+
+<file path="tests/helpers.js">
+// Общие песочницы для тестов: виртуальные часы, изолированный корень, фабрика
+// watcher'а и генератор событий движка. Прод и VM не используются.
+⋮----
+function makeClock(start = START)
+⋮----
+now: ()
+advance: ms =>
+get tick()
+⋮----
+function makeRoot(name)
+⋮----
+function makeWatcher(
+⋮----
+function engineError(
+⋮----
+function platformError(
+⋮----
+function drain(watcher, sourceId)
+</file>
+
+<file path="tests/operational-server.test.js">
+function get(port, path,
+⋮----
+function makeKeyStore()
+</file>
+
+<file path="tests/push-intake.test.js">
+function post(port,
+</file>
+
+<file path="tests/reader-cursor.test.js">
+
+</file>
+
+<file path="tests/reconciliation.test.js">
+
+</file>
+
+<file path="tests/retention.test.js">
+
+</file>
+
+<file path="tests/self-loop.test.js">
+
+</file>
+
+<file path="tests/suppression.test.js">
+function fingerprint()
+⋮----
+function feed(watcher, sourceId, count, from)
+</file>
+
+<file path="tools/repo-context/map.py">
+#!/usr/bin/env python3
+"""Bounded deterministic repo index from tracked files; never calls a model."""
+⋮----
+ROOT = Path(subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip())
+OUT = ROOT / ".repo-context/output"
+LIMIT = 8192
+EXCLUDE = (".env*", "*.key", "*.pem", "*secrets*", "*credentials*", "package-lock.json", "*.log")
+⋮----
+def allowed(name)
+⋮----
+p = Path(name)
+⋮----
+def build()
+⋮----
+sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+names = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
+names = sorted(n for n in names if n and allowed(n) and (ROOT / n).is_file() and not (ROOT / n).is_symlink())
+repo = os.environ.get("GITHUB_REPOSITORY", "trained-assist/trained-agent-architecture")
+base = f"https://github.com/{repo}/blob/{sha}/"
+rows = ["# Repository map", "", f"Source: `{repo}@{sha}`", "",
+⋮----
+path = ROOT / name
+label = name.replace("`", "").replace("\n", " ")
+detail = ""
+⋮----
+# Extract only structural headings, never paragraphs / fenced examples.
+⋮----
+fenced = not fenced
+⋮----
+detail = " — " + "; ".join(headings[:3]) if headings else ""
+row = f"- `{label}`{detail}"
+tail = f"\n\nOmitted from short index: {len(names)} paths at most. Full inventory is in manifest.json.\n"
+⋮----
+output = "\n".join(rows)
+⋮----
+manifest = {
+</file>
+
+<file path="tools/repo-context/package.json">
+{
+  "name": "trained-assist-repo-context",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Deterministic repository packing; no inference",
+  "devDependencies": { "repomix": "1.18.1" }
+}
+</file>
+
+<file path="package.json">
+{
+  "name": "trained-assist-error-watcher",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Trained Assist Error Watcher: registered error readers, incident aggregation, suppression, reconciliation",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "check": "node scripts/check-syntax.js",
+    "test": "node --test --test-concurrency=1 tests/*.test.js",
+    "sandbox": "node scripts/sandbox/error-watcher-sandbox.cjs",
+    "evidence:verify": "node scripts/sandbox/error-watcher-sandbox.cjs --verify"
+  },
+  "devDependencies": {}
+}
+</file>
+
+<file path="README.md">
+# trained-assist-error-watcher
+
+Trained Assist Error Watcher: errors to incidents, diagnosis, issue/report
+
+Статус: P27 (агрегация инцидентов и suppression) реализован 03.10.2026 · этап I09, эпик E6 #22.
+
+## Что здесь есть
+
+Чтение зарегистрированных источников ошибок (cursor/replay/dedup), агрегация в инциденты по точному fingerprint, scoped timed/permanent suppression с audit и revoke, quarantine для ops reconciliation, ограниченный бюджет диагностики и независимый health alarm. Диагностика LLM→OpenCode, отчёт и issue — карточка P28.
+
+HTTP API (loopback, ключ + scopes):
+- `POST /errors` — push intake от источников (ключ + `error:write`)
+- `GET /health` — deterministic health alarm (ключ + `error:read`)
+- `GET /incidents?status=open&service=<svc>&since=<ts>` — список инцидентов
+- `GET /incidents/:id` — детали инцидента
+- `GET /sources/:id/health` — свежесть источника
+
+Подробности и инварианты: [docs/ERROR-WATCHER.md](docs/ERROR-WATCHER.md).
+
+## Проверка
+
+```bash
+npm run check            # синтаксис модулей
+npm test                 # детерминированные тесты (node --test)
+npm run sandbox          # сценарий этапа I09 → docs/evidence/p27-incident-aggregation/
+npm run evidence:verify  # побайтовая сверка transcript
+```
+
+## Откуда берётся работа
+
+- Границы и ownership: [ARCHITECTURE §9](https://github.com/trained-assist/trained-agent-architecture/blob/main/ARCHITECTURE.md#9-репозитории-и-ownership).
+- Порядок и карточки с приёмкой: [план реализации и интеграции](https://github.com/trained-assist/trained-agent-architecture/blob/main/IMPLEMENTATION-AND-INTEGRATION-PLAN.md) — этап I09, карточки P27–P28.
+- Правила разработки и песочниц: [Engineering Approach](https://github.com/trained-assist/trained-agent-architecture/blob/main/ENGINEERING-APPROACH.md), [Sandbox Plan](https://github.com/trained-assist/trained-agent-architecture/blob/main/SANDBOX-PLAN.md).
+
+Живой сервис этим репозиторием не меняется: реализация идёт параллельно, в собственных sandbox-развёртываниях.
+
+## Архитектурный контекст
+
+Error Watcher — часть архитектуры Trained Assist. Спецификации, контракты и план реализации живут в репозитории [trained-agent-architecture](https://github.com/trained-assist/trained-agent-architecture):
+
+- [SYSTEM-ERROR-WATCHER.md](https://github.com/trained-assist/trained-agent-architecture/blob/main/SYSTEM-ERROR-WATCHER.md) — спецификация
+- [OBSERVABILITY-AND-ERROR-CONTRACT.md](https://github.com/trained-assist/trained-agent-architecture/blob/main/OBSERVABILITY-AND-ERROR-CONTRACT.md) — C12 ErrorEvent contract
+- [ARCHITECTURE.md](https://github.com/trained-assist/trained-agent-architecture/blob/main/ARCHITECTURE.md) — общая архитектура
+- [IMPLEMENTATION-AND-INTEGRATION-PLAN.md](https://github.com/trained-assist/trained-agent-architecture/blob/main/IMPLEMENTATION-AND-INTEGRATION-PLAN.md) — карточки P27–P28
+
+## Контекст репозитория
+
+CI `Repository context` на каждый PR и main собирает карту [REPO-MAP.md](https://github.com/trained-assist/trained-assist-error-watcher/blob/repo-context/REPO-MAP.md) и сжатый пакет (I00/Z03).
+</file>
+
+</files>

@@ -25,6 +25,12 @@ function createIntakeServer({ intake, port = 0 } = {}) {
 
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://127.0.0.1');
+    if (req.method === 'GET' && url.pathname === '/healthz') {
+      const report = health();
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify(report));
+      return;
+    }
     if (req.method !== 'POST' || url.pathname !== '/errors') {
       res.writeHead(404, { 'content-type': 'application/json' });
       res.end(JSON.stringify({ reasonCode: 'INTAKE_ROUTE_UNKNOWN' }));
@@ -61,6 +67,10 @@ function createIntakeServer({ intake, port = 0 } = {}) {
 
   function stop() {
     return new Promise(resolve => server.close(() => resolve()));
+  }
+
+  function health() {
+    return intake.health?.() ?? { status: 'ok', reasonCodes: [], alarmId: null };
   }
 
   return { start, stop, server };

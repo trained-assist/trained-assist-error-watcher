@@ -8,6 +8,13 @@ Trained Assist Error Watcher: errors to incidents, diagnosis, issue/report
 
 Чтение зарегистрированных источников ошибок (cursor/replay/dedup), агрегация в инциденты по точному fingerprint, scoped timed/permanent suppression с audit и revoke, quarantine для ops reconciliation, ограниченный бюджет диагностики и независимый health alarm. Диагностика LLM→OpenCode, отчёт и issue — карточка P28.
 
+HTTP API (loopback, ключ + scopes):
+- `POST /errors` — push intake от источников (ключ + `error:write`)
+- `GET /health` — deterministic health alarm (ключ + `error:read`)
+- `GET /incidents?status=open&service=<svc>&since=<ts>` — список инцидентов
+- `GET /incidents/:id` — детали инцидента
+- `GET /sources/:id/health` — свежесть источника
+
 Подробности и инварианты: [docs/ERROR-WATCHER.md](docs/ERROR-WATCHER.md).
 
 ## Проверка
@@ -26,6 +33,15 @@ npm run evidence:verify  # побайтовая сверка transcript
 - Правила разработки и песочниц: [Engineering Approach](https://github.com/trained-assist/trained-agent-architecture/blob/main/ENGINEERING-APPROACH.md), [Sandbox Plan](https://github.com/trained-assist/trained-agent-architecture/blob/main/SANDBOX-PLAN.md).
 
 Живой сервис этим репозиторием не меняется: реализация идёт параллельно, в собственных sandbox-развёртываниях.
+
+## Архитектурный контекст
+
+Error Watcher — часть архитектуры Trained Assist. Спецификации, контракты и план реализации живут в репозитории [trained-agent-architecture](https://github.com/trained-assist/trained-agent-architecture):
+
+- [SYSTEM-ERROR-WATCHER.md](https://github.com/trained-assist/trained-agent-architecture/blob/main/SYSTEM-ERROR-WATCHER.md) — спецификация
+- [OBSERVABILITY-AND-ERROR-CONTRACT.md](https://github.com/trained-assist/trained-agent-architecture/blob/main/OBSERVABILITY-AND-ERROR-CONTRACT.md) — C12 ErrorEvent contract
+- [ARCHITECTURE.md](https://github.com/trained-assist/trained-agent-architecture/blob/main/ARCHITECTURE.md) — общая архитектура
+- [IMPLEMENTATION-AND-INTEGRATION-PLAN.md](https://github.com/trained-assist/trained-agent-architecture/blob/main/IMPLEMENTATION-AND-INTEGRATION-PLAN.md) — карточки P27–P28
 
 ## Контекст репозитория
 

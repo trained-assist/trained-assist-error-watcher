@@ -1,10 +1,12 @@
 'use strict';
 
-// Error Watcher: читает зарегистрированные источники, агрегирует события в
+// Error Watcher: читает зарегистрированные источники ошибок, агрегирует события в
 // инциденты по точному fingerprint, применяет scoped suppression и выдаёт
-// не более одного dispatch-интента на активную diagnostic Task. LLM/OpenCode
-// диагностика, отчёт и issue — отдельная карточка (P28); здесь только
-// агрегация, suppression и reconciliation.
+// не более одного dispatch-интента на активную diagnostic Task.
+//
+// Diagnosis: deterministic для известных классов (I11), LLM для novel (I12).
+// LLM/OpenCode диагностика, отчёт и issue — отдельная карточка (P28); здесь только
+// агрегация, suppression, reconciliation и dispatch routing.
 
 const path = require('path');
 
@@ -22,6 +24,8 @@ const { createDispatchLedger } = require('../store/dispatch');
 const { createHealthAlarm } = require('../ops/health');
 const { createSelfErrorBucket } = require('./self-errors');
 const { DEFAULT_CONFIG: DEFAULT_RETENTION } = require('../store/retention');
+const { diagnose } = require('../diagnosis/deterministic');
+const { createLlmDiagnosisDispatch } = require('../diagnosis/llm');
 
 const DEFAULT_CONFIG = {
   maxDiagnosticDepth: 1,
@@ -49,8 +53,9 @@ function isSelfOrigin(origin) {
  * @param {object} [options.config]
  * @param {string} [options.logFile]
  * @param {(intent: object) => object} [options.dispatcher] приёмник dispatch-интентов (fake sink в песочнице)
+ * @param {object} [options.llmClient] опциональный LLM-клиент для novel-диагностики
  */
-function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile, dispatcher } = {}) {
+function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile, dispatcher, llmClient } = {}) {
   if (!root) throw new Error('error watcher requires an isolated root');
   const clock = typeof now === 'function' ? now : () => new Date();
   const mergedConfig = { ...DEFAULT_CONFIG, ...config };
@@ -62,10 +67,11 @@ function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile
   const reconciliation = createReconciliationStore({ root, log, now: clock });
   const dispatch = createDispatchLedger({ root, log, now: clock, config: mergedConfig });
   const selfErrors = createSelfErrorBucket({ root, log, now: clock });
+  const llmDispatch = createLlmDiagnosisDispatch({ watcher: { incidents }, llmClient, dispatchLedger: dispatch, log, now: clock });
 
   const sources = new Map();
   const serviceIndex = new Map();
-  const state = { deferredCount: 0, ingestedCount: 0, suppressedCount: 0, quarantinedCount: 0, selfErrorCount: 0 };
+  const state = { deferredCount: 0, ingestedCount: 0, suppressedCount: 0, quarantinedCount: 0, selfErrorCount: 0, llmDiagnosedCount: 0, deterministicDiagnosedCount: 0 };
 
   const health = createHealthAlarm({
     root,
@@ -129,6 +135,40 @@ function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile
   }
 
   function dispatchIntent(incident, event, slot) {
+    const diagnosis = diagnose(incident);
+    if (diagnosis.needsLlm) {
+      state.llmDiagnosedCount += 1;
+      log.write('diagnosis.deterministic_novel', {
+        incidentId: incident.incidentId,
+        diagnosticUserTaskId: slot ? slot.diagnosticUserTaskId : null,
+        from: 'incident',
+        to: 'novel',
+        reasonCode: 'NOVEL_ERROR_PATTERN',
+        detail: `novel error pattern: ${incident.errorClass || 'unknown'}`,
+        fingerprint: incident.fingerprint,
+        errorClass: incident.errorClass,
+        service: incident.service,
+      });
+      if (llmDispatch && llmDispatch.canDispatch(incident.incidentId)) {
+        llmDispatch.dispatch(incident);
+      }
+    } else {
+      state.deterministicDiagnosedCount += 1;
+      log.write('diagnosis.deterministic_matched', {
+        incidentId: incident.incidentId,
+        diagnosticUserTaskId: slot ? slot.diagnosticUserTaskId : null,
+        from: 'incident',
+        to: 'diagnosed',
+        reasonCode: 'DETERMINISTIC_DIAGNOSIS',
+        detail: diagnosis.diagnosis,
+        fingerprint: incident.fingerprint,
+        errorClass: incident.errorClass,
+        diagnosisClass: diagnosis.class,
+        action: diagnosis.action,
+        confidence: diagnosis.confidence,
+      });
+    }
+
     if (!incidents.canDispatch(incident)) {
       state.deferredCount += 1;
       log.write('diagnosis.deferred', {
@@ -140,7 +180,7 @@ function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile
         detail: 'the per-incident dispatch budget is exhausted; the excess stays visible in the backlog',
         fingerprint: incident.fingerprint,
       });
-      return { dispatchId: null, reasonCode: 'DISPATCH_BUDGET_EXHAUSTED' };
+      return { dispatchId: null, reasonCode: 'DISPATCH_BUDGET_EXHAUSTED', diagnosis };
     }
     if (!dispatch.canDispatch(clock())) {
       state.deferredCount += 1;
@@ -153,7 +193,7 @@ function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile
         detail: 'the global dispatch window budget is exhausted; the excess stays visible in the backlog',
         fingerprint: incident.fingerprint,
       });
-      return { dispatchId: null, reasonCode: 'GLOBAL_BUDGET_EXHAUSTED' };
+      return { dispatchId: null, reasonCode: 'GLOBAL_BUDGET_EXHAUSTED', diagnosis };
     }
     const intent = dispatch.record({
       incidentId: incident.incidentId,
@@ -161,13 +201,14 @@ function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile
       fingerprint: incident.fingerprint,
       reasonCode: 'DIAGNOSIS_DISPATCHED',
       eventIds: [event.eventId],
+      diagnosis,
     });
     incidents.countDispatch(incident);
     if (dispatcher) {
       const outcome = dispatcher(intent);
       dispatch.receipt(intent.dispatchId, { status: outcome && outcome.status === 'failed' ? 'failed' : 'submitted', detail: outcome ? outcome.detail : null });
     }
-    return { dispatchId: intent.dispatchId, reasonCode: 'DIAGNOSIS_DISPATCHED' };
+    return { dispatchId: intent.dispatchId, reasonCode: 'DIAGNOSIS_DISPATCHED', diagnosis };
   }
 
   function ingestEvent(rawEvent) {
@@ -314,6 +355,7 @@ function createErrorWatcher({ root, now = () => new Date(), config = {}, logFile
       suppressedCount: incident.suppressedCount,
       affectedProfileCount: incident.affectedProfileRefs.length,
       affectedTaskReports: incident.affectedTaskReports,
+      diagnosis: dispatchReason ? { class: dispatchReason, needsLlm: false } : null,
     };
   }
 
